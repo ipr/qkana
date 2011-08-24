@@ -9,8 +9,7 @@ Experimenting with Qt, Berkeley DB and ways to translate given text
 (in hiragana, katakana and kanji) to english/finnish etc.
 
 Description:
-På kommande..
-
+In progress..
 Mostly just project for personal use to learn japanese and rough translatation for own use.
 
 Licensing:
