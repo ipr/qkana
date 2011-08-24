@@ -10,7 +10,7 @@ Experimenting with Qt, Berkeley DB and ways to translate given text
 
 Description:
 In progress..
-Mostly just project for personal use to learn japanese and rough translatation for own use.
+Mostly just for personal use to learn japanese language and simple translation helper.
 
 Licensing:
 GPL v3 (possibly)
