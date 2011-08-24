@@ -3,8 +3,20 @@
 
 #include <QString>
 
-// use db for persisent storage
+// use db for persistent storage
 #include <db_cxx.h>
+
+/////////////
+// TODO: check approach..
+// BDB just stores key/value pairs
+// and has no concept of tables (though it has partitions..)
+// -> for many-to-many relations we may need 
+// some abstraction of data relations and way to store that..
+// -> find better way ?
+//
+// (kanji+kana combination and choice of characters may change meaning
+// even if pronounced the same..)
+//
 
 class CAbstractTable
 {
