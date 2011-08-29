@@ -15,7 +15,8 @@ SOURCES += main.cpp\
     LanguageData.cpp
 
 HEADERS  += mainwindow.h \
-    LanguageData.h
+    LanguageData.h \
+    qautoptr.h
 
 FORMS    += mainwindow.ui
 
@@ -31,4 +32,3 @@ CONFIG (release, debug|release)
     LIBS += -llibdb52
     LIBS += -LC:/code/db-5.2.28/build_windows/Win32/Release/
 }
-

@@ -25,6 +25,9 @@ public slots:
 protected:
 	//QString toRomaji(QString &text);
 	
+private slots:
+	void on_actionDictionary_triggered();
+	
 private:
     Ui::MainWindow *ui;
 	QClipboard *m_pClipBoard;

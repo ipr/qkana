@@ -18,6 +18,7 @@
 // even if pronounced the same..)
 //
 
+/*
 class CAbstractTable
 {
 protected:
@@ -31,7 +32,6 @@ public:
 	{}
 };
 
-/*
 class CSentenceTable : protected CAbstractTable
 {
 };
@@ -45,6 +45,8 @@ class CMeaningTable : protected CAbstractTable
 };
 */
 
+class QByteArray;
+
 class CLanguageData
 {
 protected:
@@ -53,12 +55,21 @@ protected:
 	//bool Read(CAbstractTable *pTable, Dbt &Key, Dbt &Value);
 	//bool Write(CAbstractTable *pTable, Dbt &Key, Dbt &Value);
 	
+	bool Lookup(QString &source, QString &output);
+	
+	bool Write(QByteArray &Key, QByteArray &Value);
+	bool appendDictionary(QByteArray &line);
+	
 public:
     CLanguageData();
     virtual ~CLanguageData();
 	
 	bool init(QString &appPath);
 	bool close();
+
+	// include dictionary file in language database
+	// (append missing information)
+	bool includeDictionary(QString &dictFile);
 	
 	// get meanings of single reading
 	//QStringList getMeanings(QString &reading);
@@ -68,6 +79,8 @@ public:
 	
 	// keep whole sentence (for testing, now)
 	//bool keepSentence(QString &reading);
+	
+	QString getText(QString &source);
 };
 
 #endif // LANGUAGEDATA_H

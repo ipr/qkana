@@ -12,8 +12,11 @@ Description:
 In progress..
 Mostly just for personal use to learn japanese language and simple translation helper.
 
+Some quick hacking to use dictionary files for help, namely EDICT (http://www.csse.monash.edu.au/~jwb/edict.html),
+possibly others later also (needs improvements in db-layout first).
+
 Licensing:
-GPL v3 (possibly)
+BSD-style ? GPL v3 ? (to be determined..)
 
 In progress, details later..
 

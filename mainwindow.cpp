@@ -4,6 +4,8 @@
 #include "LanguageData.h"
 
 #include <QClipboard>
+#include <QFileDialog>
+
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -43,7 +45,14 @@ void MainWindow::clipboardChanged(QClipboard::Mode mode)
 	*/
 	
 	ui->textBrowser->clear();
-	ui->textBrowser->setText(m_pClipBoard->text());
+	
+	QString text = m_pClipBoard->text();
+	
+	// show original capture
+	ui->textBrowser->setText(text);
+	
+	// use dictionary..
+	ui->textBrowser->setText(m_pLanguageData->getText(text));
 
 	// TODO: show hiragana->romaji ?
 	//QString text = m_pClipBoard->text(mode);
@@ -56,3 +65,12 @@ QString MainWindow::toRomaji(QString &text)
 	return text;
 }
 */
+
+void MainWindow::on_actionDictionary_triggered()
+{
+	QString szFile = QFileDialog::getOpenFileName(this, tr("Open file"));
+	if (szFile != NULL)
+	{
+		m_pLanguageData->includeDictionary(szFile);
+	}
+}
