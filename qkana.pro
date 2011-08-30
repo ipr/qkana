@@ -15,8 +15,7 @@ SOURCES += main.cpp\
     LanguageData.cpp
 
 HEADERS  += mainwindow.h \
-    LanguageData.h \
-    qautoptr.h
+    LanguageData.h
 
 FORMS    += mainwindow.ui
 

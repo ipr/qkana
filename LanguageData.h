@@ -49,6 +49,7 @@ class CMeaningTable : protected CAbstractTable
 */
 
 class QByteArray;
+class QTextCodec;
 
 class CLanguageData
 {
@@ -58,10 +59,10 @@ protected:
 	//bool Read(CAbstractTable *pTable, Dbt &Key, Dbt &Value);
 	//bool Write(CAbstractTable *pTable, Dbt &Key, Dbt &Value);
 	
-	bool Lookup(QString &source, QString &output);
+	bool Lookup(QString &source, QByteArray &output);
+	bool Store(QString &Key, QByteArray &Value);
 	
-	bool Write(QByteArray &Key, QByteArray &Value);
-	bool appendDictionary(QByteArray &line);
+	bool appendDictionary(QByteArray &line, QTextCodec *codec);
 	
 public:
     CLanguageData();

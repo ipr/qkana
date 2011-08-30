@@ -2,11 +2,16 @@
 // Ilkka Prusi, 2011
 
 #include "LanguageData.h"
-#include "qautoptr.h"
+
+// replaced by std::auto_ptr (VC++ 2010 has it..)
+//#include "qautoptr.h"
 
 #include <QFile>
 #include <QByteArray>
+#include <QTextCodec>
 
+// for std::auto_ptr
+#include <memory>
 
 //////////// protected methods
 
@@ -48,9 +53,11 @@ bool CLanguageData::Write(CAbstractTable *pTable, Dbt &Key, Dbt &Value)
 }
 */
 
-bool CLanguageData::Lookup(QString &source, QString &output)
+bool CLanguageData::Lookup(QString &source, QByteArray &output)
 {
-	Dbt dbkey(source.data(), source.size()+1);
+	// note: expect byte-size count, not character-count
+	// -> expect 16-bit size of characters
+	Dbt dbkey(source.data(), source.size()*2+1);
     //Dbt dbvalue(Value.data(), Value.size());
     Dbt dbvalue; // <- check handling
 
@@ -63,15 +70,17 @@ bool CLanguageData::Lookup(QString &source, QString &output)
 		return false;
 	}
 	
-	// check ->
-	output = dbvalue.data();
+	// check, better way to set raw data to QString?
+	output = (const char*)dbvalue.get_data();
 	return true;
 }
 
-bool CLanguageData::Write(QByteArray &Key, QByteArray &Value)
+bool CLanguageData::Store(QString &Key, QByteArray &Value)
 {
-	Dbt dbkey(Key.data(), Key.size()+1);
-    Dbt dbvalue(Value.data(), Value.size());
+	// note: expect byte-size count, not character-count
+	// -> expect 16-bit size of characters
+	Dbt dbkey(Key.data(), Key.size()*2+1);
+    Dbt dbvalue(Value.data(), Value.size()+1);
 	
 	// TODO: check flag DB_APPEND (append translation value)
 	// or read existing first?
@@ -90,11 +99,14 @@ bool CLanguageData::Write(QByteArray &Key, QByteArray &Value)
 // split line and store to db:
 // - line can be: kanji [kana] /translation1/translation2/..
 // - or: kanji /translation/..
-bool CLanguageData::appendDictionary(QByteArray &line)
+bool CLanguageData::appendDictionary(QByteArray &line, QTextCodec *codec)
 {
 	// split kanji [kana] and translations
 	int iSplit = line.indexOf('/');
-	QByteArray kanji = line.left(iSplit);
+	
+	// use EUC-JP -> Unicode conversion for simplicity later..
+	QString kanji = codec->toUnicode(line.data(), iSplit);
+	
 	QByteArray translation = line.right(line.size()-iSplit);
 
 	// if kanji+kana -> keep both,
@@ -103,19 +115,19 @@ bool CLanguageData::appendDictionary(QByteArray &line)
 	if (iSplit < 0)
 	{
 		// just kanji: keep it and translation
-		return Write(kanji, translation);
+		return Store(kanji, translation);
 	}
 	
 	// keep same translation for both kanji and kana separately
 	// for easier lookup later
 	
-	if (Write(kanji.left(iSplit), translation) == false)
+	if (Store(kanji.left(iSplit), translation) == false)
 	{
 		return false;
 	}
 	
 	int iEnd = kanji.indexOf(']');
-	if (Write(kanji.mid(iSplit, iSplit+iEnd), translation) == false)
+	if (Store(kanji.mid(iSplit, iSplit+iEnd), translation) == false)
 	{
 		return false;
 	}
@@ -143,7 +155,8 @@ bool CLanguageData::init(QString &appPath)
 	// (no tables in berkeley db and need many-to-many relations..)
 	//
 
-	int iRet = m_db.open(NULL, appPath.append("qclip.db"), NULL, DB_BTREE, DB_CREATE, 0664);
+	int iRet = m_db.open(NULL, appPath.append("qclip.db").toLocal8Bit(), 
+	                     NULL, DB_BTREE, DB_CREATE, 0664);
 	if (iRet != 0)
 	{
 		// some more error handling?
@@ -164,7 +177,8 @@ bool CLanguageData::close()
 bool CLanguageData::includeDictionary(QString &dictFile)
 {
 	// simplifies cleanup later..
-	qAutoPtr dict(new QFile(dictFile));
+	//qAutoPtr dict(new QFile(dictFile));
+	std::auto_ptr<QFile> dict(new QFile(dictFile));
 	
 	if (dict->open(QIODevice::ReadOnly) == false)
 	{
@@ -187,17 +201,18 @@ bool CLanguageData::includeDictionary(QString &dictFile)
 	while (iStart < iSize)
 	{
 		qint64 iEnd = iStart+1;
-		while (pView != '\n'
-		       && iEnd < iSize)
+		while (iEnd < iSize)
 		{
+			uchar *puc = (uchar*)(pView+iEnd);
+			if (*puc == '\n')
+			{
+				break;
+			}
 			++iEnd;
 		}
-		
-		// get line: kanji [kana] /translation/..
-		// note: use EUC-JP -> Unicode conversion for simplicity later..
-		//
-		QString line = codec->toUnicode(pView+iStart, iEnd-iStart);
-		appendDictionary(QByteArray(line));
+
+		// parse line to dictionary entries
+		appendDictionary(QByteArray((char*)(pView+iStart), iEnd-iStart), codec);
 		
 		iStart = iEnd;
 	}
@@ -249,10 +264,13 @@ QString CLanguageData::getText(QString &source)
 		//
 		// TODO: skip punctuation or allow whole phrases?
 		//
+		// TODO: better way to store translations..
+		//
+		QByteArray tmp;
 		int iTmpLen = source.length();
 		while (iTmpLen > 0)
 		{
-			if (Lookup(source.left(iTmpLen), output) == true)
+			if (Lookup(source.left(iTmpLen), tmp) == true)
 			{
 				break;
 			}
@@ -267,7 +285,9 @@ QString CLanguageData::getText(QString &source)
 		}
 		else
 		{
-			// skip the part which we found translation for
+			// append translation to output
+			output += tmp;
+			// skip the part of source which we found translation for
 			iStart += iTmpLen;
 		}
 	}
