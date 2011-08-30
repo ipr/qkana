@@ -1,3 +1,6 @@
+/////////////////////////////////////////////
+// Ilkka Prusi, 2011
+
 #include "LanguageData.h"
 #include "qautoptr.h"
 
@@ -51,14 +54,17 @@ bool CLanguageData::Lookup(QString &source, QString &output)
     //Dbt dbvalue(Value.data(), Value.size());
     Dbt dbvalue; // <- check handling
 
-	// check flags ->
+	// flags as zero, no change in data,
+	// key should be unique anyway..
 	int iRet = m_db.get(0, &dbkey, &dbvalue, 0);
-	
-	// check error return ->
-    if (iRet == DB_KEYEMPTY) 
+    if (iRet != 0) 
 	{
+	    //qDebug() << "Key not found: " << Key.data();
 		return false;
 	}
+	
+	// check ->
+	output = dbvalue.data();
 	return true;
 }
 
@@ -68,6 +74,9 @@ bool CLanguageData::Write(QByteArray &Key, QByteArray &Value)
     Dbt dbvalue(Value.data(), Value.size());
 	
 	// TODO: check flag DB_APPEND (append translation value)
+	// or read existing first?
+	//
+	// should have unique keys
 	int iRet = m_db.put(0, &dbkey, &dbvalue, DB_NOOVERWRITE);
     if (iRet == DB_KEYEXIST) 
     {
@@ -238,6 +247,8 @@ QString CLanguageData::getText(QString &source)
 	{
 		// this will need optimization later..
 		//
+		// TODO: skip punctuation or allow whole phrases?
+		//
 		int iTmpLen = source.length();
 		while (iTmpLen > 0)
 		{
@@ -264,3 +275,39 @@ QString CLanguageData::getText(QString &source)
 	return output;
 }
 
+// "romanized" (latin-alphabet) representation
+// of kana-writing, mostly for debugging only..
+QString CLanguageData::toRomaji(QString &source)
+{
+	QString output;
+	int iPos = 0;
+	
+	while (iPos < source.count())
+	{
+		QChar ch = source[iPos];
+		if (ch.digitValue() >= 0x3041 && ch.digitValue() <= 0x309F)
+		{
+			// hiragana character in unicode table
+			
+			/*
+			if (ch == "\u3063")
+			{
+				// small tsu -> 
+				// append consonant of following kana?
+				// (or vowel of last kana?)
+			}
+			*/
+		}
+		else if (ch.digitValue() >= 0x30A0 && ch.digitValue() <= 0x30FF)
+		{
+			// katakana character in unicode table
+		}
+		else
+		{
+			// maybe kanji or other -> output as-is
+			output += ch;
+		}
+		++iPos;
+	}
+	return output;
+}

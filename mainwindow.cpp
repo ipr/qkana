@@ -1,3 +1,7 @@
+/////////////////////////////////////////////
+// Ilkka Prusi, 2011
+
+
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
@@ -55,16 +59,8 @@ void MainWindow::clipboardChanged(QClipboard::Mode mode)
 	ui->textBrowser->setText(m_pLanguageData->getText(text));
 
 	// TODO: show hiragana->romaji ?
-	//QString text = m_pClipBoard->text(mode);
-	//ui->textBrowser->setText(toRomaji(text));
+	ui->textBrowser->setText(m_pLanguageData->toRomaji(text));
 }
-
-/*
-QString MainWindow::toRomaji(QString &text)
-{
-	return text;
-}
-*/
 
 void MainWindow::on_actionDictionary_triggered()
 {

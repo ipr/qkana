@@ -1,3 +1,6 @@
+/////////////////////////////////////////////
+// Ilkka Prusi, 2011
+
 #ifndef LANGUAGEDATA_H
 #define LANGUAGEDATA_H
 
@@ -80,7 +83,13 @@ public:
 	// keep whole sentence (for testing, now)
 	//bool keepSentence(QString &reading);
 	
+	// translate source with dictionary-lookup
 	QString getText(QString &source);
+
+	// "romanized" (latin-alphabet) representation
+	// of kana-writing, mostly for debugging only..
+	QString toRomaji(QString &source);
+	
 };
 
 #endif // LANGUAGEDATA_H

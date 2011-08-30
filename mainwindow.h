@@ -1,3 +1,6 @@
+/////////////////////////////////////////////
+// Ilkka Prusi, 2011
+
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
@@ -21,10 +24,7 @@ public:
 
 public slots:
     void clipboardChanged(QClipboard::Mode mode);
-	
-protected:
-	//QString toRomaji(QString &text);
-	
+
 private slots:
 	void on_actionDictionary_triggered();
 	

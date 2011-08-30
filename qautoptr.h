@@ -1,21 +1,23 @@
 // may already exist in Qt, can't bother to look for it..
 // simple smartpointer, use from stack always.
 //
+// redone as template..
+//
 // Ilkka Prusi, 2011
 
 #ifndef QAUTOPTR_H
 #define QAUTOPTR_H
 
 // fwd. decl.
-class QObject;
+//class QObject;
 
-class qAutoPtr
+template <class T> class qAutoPtr
 {
 protected:
-	QObject *m_ob;
+	T *m_ob;
 	
 public:
-	qAutoPtr(QObject *pOb)
+	qAutoPtr(T *pOb)
 	    : m_ob(pOb)
 	{}
 	~qAutoPtr()
@@ -23,11 +25,11 @@ public:
 		delete m_ob;
 	}
 
-    qAutoPtr & operator*()
+    T & operator*()
 	{
 		return *m_ob;
 	}
-    qAutoPtr * operator->()
+    T * operator->()
 	{
 		return m_ob;
 	}
