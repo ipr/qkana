@@ -155,7 +155,7 @@ bool CLanguageData::init(QString &appPath)
 	// (no tables in berkeley db and need many-to-many relations..)
 	//
 
-	int iRet = m_db.open(NULL, appPath.append("qclip.db").toLocal8Bit(), 
+	int iRet = m_db.open(NULL, appPath.append("qkanadictionary.db").toLocal8Bit(), 
 	                     NULL, DB_BTREE, DB_CREATE, 0664);
 	if (iRet != 0)
 	{
