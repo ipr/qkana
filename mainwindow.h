@@ -28,10 +28,15 @@ public slots:
 private slots:
 	void on_actionDictionary_triggered();
 	
+	void on_actionDisable_translation_triggered(bool checked);
+	
 private:
     Ui::MainWindow *ui;
 	QClipboard *m_pClipBoard;
 	CLanguageData *m_pLanguageData;
+	
+	// disable automatic translations
+	bool m_bDisableTranslate;
 };
 
 #endif // MAINWINDOW_H

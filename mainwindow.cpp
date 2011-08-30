@@ -15,21 +15,22 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
     m_pClipBoard(nullptr),
-    m_pLanguageData(nullptr)
+    m_pLanguageData(nullptr),
+    m_bDisableTranslate(false)
 {
     ui->setupUi(this);
-	
-	m_pLanguageData = new CLanguageData();
 
-	//m_pClipBoard = new QClipboard(this);
+	// initialize before trying to translate
+	m_pLanguageData = new CLanguageData();
+	m_pLanguageData->init(QApplication::applicationDirPath());
+
+	// capture from clipboard directly..
 	m_pClipBoard = QApplication::clipboard();
 	if (m_pClipBoard != NULL)
 	{
 		connect(m_pClipBoard, SIGNAL(changed(QClipboard::Mode)), this, SLOT(clipboardChanged(QClipboard::Mode)));
-		ui->textBrowser->setText(m_pClipBoard->text());
+		//ui->textBrowser->setText(m_pClipBoard->text());
 	}
-	
-	m_pLanguageData->init(QApplication::applicationDirPath());
 }
 
 MainWindow::~MainWindow()
@@ -54,12 +55,16 @@ void MainWindow::clipboardChanged(QClipboard::Mode mode)
 	
 	// show original capture
 	ui->textBrowser->setText(text);
-	
-	// use dictionary..
-	ui->textBrowser->setText(m_pLanguageData->getText(text));
 
-	// TODO: show hiragana->romaji ?
-	ui->textBrowser->setText(m_pLanguageData->toRomaji(text));
+	// allow disabling automated translation..
+	if (m_bDisableTranslate == false)
+	{
+		// use dictionary..
+		ui->textBrowser->setText(m_pLanguageData->getText(text));
+		
+		// TODO: show hiragana->romaji ?
+		ui->textBrowser->setText(m_pLanguageData->toRomaji(text));
+	}
 }
 
 void MainWindow::on_actionDictionary_triggered()
@@ -68,5 +73,11 @@ void MainWindow::on_actionDictionary_triggered()
 	if (szFile != NULL)
 	{
 		m_pLanguageData->includeDictionary(szFile);
+		ui->statusBar->showMessage("Dictionary included");
 	}
+}
+
+void MainWindow::on_actionDisable_translation_triggered(bool checked)
+{
+	m_bDisableTranslate = checked;
 }

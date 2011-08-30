@@ -9,110 +9,112 @@
 #include <QFile>
 #include <QByteArray>
 #include <QTextCodec>
+#include <QDebug>
 
 // for std::auto_ptr
 #include <memory>
 
+// TODO: handle standard library exceptions also..
+#include <exception>
+
+
 //////////// protected methods
-
-// read entry from given table
-/*
-bool CLanguageData::Read(CAbstractTable *pTable, Dbt &Key, Dbt &Value)
-{
- // test reading each key-value pair with cursor
- Dbc *dbcp = NULL;
- db.cursor(NULL, &dbcp, 0);
- Dbt selkey;
- Dbt seldata;
-
- while (dbcp->get(&selkey, &seldata, DB_NEXT) == 0) 
- {
-	 char *key_string = (char *)selkey.get_data();
-	 char *data_string = (char *)seldata.get_data();
-	 std::cout << key_string << " : " << data_string << std::endl;
- }
- dbcp->close();
-}
-*/
-
-// write given entry to given table
-/*
-bool CLanguageData::Write(CAbstractTable *pTable, Dbt &Key, Dbt &Value)
-{
- // test adding some data
- char *pKey = "key";
- char *pVal = "value";
- Dbt inskey(pKey, strlen(pKey)+1);
- Dbt insdata(pVal, strlen(pVal)+1);
-
- iRet = db.put(0, &inskey, &insdata, DB_NOOVERWRITE);
- if (iRet == DB_KEYEXIST) 
- {
-	 std::cerr << "Key exists" << std::endl;
- }
-}
-*/
 
 bool CLanguageData::Lookup(QString &source, QByteArray &output)
 {
-	// note: expect byte-size count, not character-count
-	// -> expect 16-bit size of characters
-	Dbt dbkey(source.data(), source.size()*2+1);
-    //Dbt dbvalue(Value.data(), Value.size());
-    Dbt dbvalue; // <- check handling
-
-	// flags as zero, no change in data,
-	// key should be unique anyway..
-	int iRet = m_db.get(0, &dbkey, &dbvalue, 0);
-    if (iRet != 0) 
+	try
 	{
-	    //qDebug() << "Key not found: " << Key.data();
-		return false;
+		// note: expect byte-size count, not character-count
+		// -> expect 16-bit size of characters
+		Dbt dbkey(source.data(), source.size()*2+1);
+		//Dbt dbvalue(Value.data(), Value.size());
+		Dbt dbvalue; // <- check handling
+
+		qDebug() << "looking for: " << source;
+		
+		// flags as zero, no change in data,
+		// key should be unique anyway..
+		int iRet = m_db.get(0, &dbkey, &dbvalue, 0);
+		if (iRet == 0) 
+		{
+			// check, better way to set raw data to QString?
+			output = (const char*)dbvalue.get_data();
+			return true;
+		}
+		
+		qDebug() << "Key not found: " << source;
 	}
-	
-	// check, better way to set raw data to QString?
-	output = (const char*)dbvalue.get_data();
-	return true;
+	catch (DbException dbe)
+	{
+		qDebug() << "exception caught: " << source << " " << dbe.what();
+	}
+	return false;
 }
 
 bool CLanguageData::Store(QString &Key, QByteArray &Value)
 {
-	// note: expect byte-size count, not character-count
-	// -> expect 16-bit size of characters
-	Dbt dbkey(Key.data(), Key.size()*2+1);
-    Dbt dbvalue(Value.data(), Value.size()+1);
-	
-	// TODO: check flag DB_APPEND (append translation value)
-	// or read existing first?
-	//
-	// should have unique keys
-	int iRet = m_db.put(0, &dbkey, &dbvalue, DB_NOOVERWRITE);
-    if (iRet == DB_KEYEXIST) 
-    {
-	    //qDebug() << "Key exists: " << Key.data();
-		return false;
-    }
-	return true;
+	try
+	{
+		// note: expect byte-size count, not character-count
+		// -> expect 16-bit size of characters
+		Dbt dbkey(Key.data(), Key.size()*2+1);
+		Dbt dbvalue(Value.data(), Value.size()+1);
+		
+		qDebug() << "storing: " << Key << " " << Value;
+		
+		// TODO: check flag DB_APPEND (append translation value)
+		// or read existing first?
+		//
+		// should have unique keys
+		int iRet = m_db.put(0, &dbkey, &dbvalue, DB_NOOVERWRITE);
+		if (iRet == 0) 
+		{
+			return true;
+		}
+		
+		qDebug() << "failed to store: " << Key << " " << Value << " result: " << iRet;
+	}
+	catch (DbException dbe)
+	{
+		qDebug() << "exception caught: " << Key << " " << dbe.what();
+	}
+	return false;
 }
 
 
 // split line and store to db:
 // - line can be: kanji [kana] /translation1/translation2/..
 // - or: kanji /translation/..
-bool CLanguageData::appendDictionary(QByteArray &line, QTextCodec *codec)
+bool CLanguageData::appendDictionary(uchar *pData, qint64 iSize, QTextCodec *codec)
 {
 	// split kanji [kana] and translations
-	int iSplit = line.indexOf('/');
+	qint64 iPos = 0;
+	while (iPos < iSize)
+	{
+		uchar *puc = (pData+iPos);
+		if (*puc == '/')
+		{
+			break;
+		}
+		++iPos;
+	}
+	
+	if (iPos >= iSize)
+	{
+		// no translation in line?
+		return false;
+	}
 	
 	// use EUC-JP -> Unicode conversion for simplicity later..
-	QString kanji = codec->toUnicode(line.data(), iSplit);
-	
-	QByteArray translation = line.right(line.size()-iSplit);
+	QString kanji = codec->toUnicode((char*)pData, iPos);
+
+	// rest of line is translation(s)
+	QByteArray translation((char*)(pData+iPos), iSize-iPos);
 
 	// if kanji+kana -> keep both,
 	// otherwise has just kanji
-	iSplit = kanji.indexOf('[');
-	if (iSplit < 0)
+	iPos = kanji.indexOf('[');
+	if (iPos < 0)
 	{
 		// just kanji: keep it and translation
 		return Store(kanji, translation);
@@ -121,13 +123,13 @@ bool CLanguageData::appendDictionary(QByteArray &line, QTextCodec *codec)
 	// keep same translation for both kanji and kana separately
 	// for easier lookup later
 	
-	if (Store(kanji.left(iSplit), translation) == false)
+	if (Store(kanji.left(iPos), translation) == false)
 	{
 		return false;
 	}
 	
 	int iEnd = kanji.indexOf(']');
-	if (Store(kanji.mid(iSplit, iSplit+iEnd), translation) == false)
+	if (Store(kanji.mid(iPos+1, (iEnd-iPos)-1), translation) == false)
 	{
 		return false;
 	}
@@ -140,6 +142,7 @@ bool CLanguageData::appendDictionary(QByteArray &line, QTextCodec *codec)
 
 CLanguageData::CLanguageData()
  : m_db(0,0)
+ , m_bIsOpen(false)
 {
 }
 
@@ -155,20 +158,52 @@ bool CLanguageData::init(QString &appPath)
 	// (no tables in berkeley db and need many-to-many relations..)
 	//
 
-	int iRet = m_db.open(NULL, appPath.append("qkanadictionary.db").toLocal8Bit(), 
-	                     NULL, DB_BTREE, DB_CREATE, 0664);
-	if (iRet != 0)
+	try
 	{
-		// some more error handling?
-		return false;
+		QString dbPath = appPath.append("qkanadictionary.db");
+		int iRet = m_db.open(NULL, dbPath.toLocal8Bit(), 
+		                     NULL, DB_BTREE, DB_CREATE, 0664);
+		if (iRet == 0)
+		{
+			m_bIsOpen = true;
+			return true;
+		}
+		
+		// TODO: error to user?
+		qDebug() << "failed to open/create db-file: " << dbPath << " result: " << iRet;
 	}
-	return true;
+	catch (DbException dbe)
+	{
+		qDebug() << "exception caught: " << dbe.what();
+	}
+	return false;
 }
 
+// note: closing can be done by destructor or user,
+// extra safety necessary here..
 bool CLanguageData::close()
 {
-	m_db.close(0);
-	return true;
+	try
+	{
+		// flush to disk and close cleanly,
+		// check that and ignore if nothing to do.
+		if (m_bIsOpen == true)
+		{
+			m_db.sync(0);
+			m_db.close(0);
+			m_bIsOpen = false;
+		}
+		return true;
+	}
+	catch (DbException dbe)
+	{
+		qDebug() << "exception caught: " << dbe.what();
+	}
+	catch (...)
+	{
+		qDebug() << "unknown exception caught";
+	}
+	return false;
 }
 
 // append dictionary-data from specified file into database:
@@ -200,10 +235,11 @@ bool CLanguageData::includeDictionary(QString &dictFile)
 	qint64 iStart = 0;
 	while (iStart < iSize)
 	{
+		uchar *pPos = (pView+iStart);
 		qint64 iEnd = iStart+1;
 		while (iEnd < iSize)
 		{
-			uchar *puc = (uchar*)(pView+iEnd);
+			uchar *puc = (pPos+iEnd);
 			if (*puc == '\n')
 			{
 				break;
@@ -211,9 +247,13 @@ bool CLanguageData::includeDictionary(QString &dictFile)
 			++iEnd;
 		}
 
-		// parse line to dictionary entries
-		appendDictionary(QByteArray((char*)(pView+iStart), iEnd-iStart), codec);
-		
+		// skip empty lines (if any..)
+		if ((iEnd-iStart) > 1)
+		{
+			// parse line to dictionary entries
+			appendDictionary(pPos, iEnd-iStart, codec);
+		}
+			
 		iStart = iEnd;
 	}
 

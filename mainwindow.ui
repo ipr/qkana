@@ -43,6 +43,7 @@
    </attribute>
    <addaction name="actionQuit"/>
    <addaction name="actionDictionary"/>
+   <addaction name="actionDisable_translation"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionQuit">
@@ -55,10 +56,21 @@
   </action>
   <action name="actionDictionary">
    <property name="text">
-    <string>Dictionary</string>
+    <string>Include dictionary</string>
    </property>
    <property name="toolTip">
     <string>Append dictionary from file</string>
+   </property>
+  </action>
+  <action name="actionDisable_translation">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Disable translation</string>
+   </property>
+   <property name="toolTip">
+    <string>Disable automatic translation </string>
    </property>
   </action>
  </widget>

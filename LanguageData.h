@@ -55,6 +55,7 @@ class CLanguageData
 {
 protected:
 	Db m_db;
+	bool m_bIsOpen;
 
 	//bool Read(CAbstractTable *pTable, Dbt &Key, Dbt &Value);
 	//bool Write(CAbstractTable *pTable, Dbt &Key, Dbt &Value);
@@ -62,7 +63,7 @@ protected:
 	bool Lookup(QString &source, QByteArray &output);
 	bool Store(QString &Key, QByteArray &Value);
 	
-	bool appendDictionary(QByteArray &line, QTextCodec *codec);
+	bool appendDictionary(uchar *pData, qint64 iSize, QTextCodec *codec);
 	
 public:
     CLanguageData();
