@@ -27,11 +27,8 @@ bool CLanguageData::Lookup(QString &source, QByteArray &output)
 		// note: expect byte-size count, not character-count
 		// -> expect 16-bit size of characters
 		Dbt dbkey(source.data(), source.size()*2+1);
-		//Dbt dbvalue(Value.data(), Value.size());
 		Dbt dbvalue; // <- check handling
 
-		qDebug() << "looking for: " << source;
-		
 		// flags as zero, no change in data,
 		// key should be unique anyway..
 		int iRet = m_db.get(0, &dbkey, &dbvalue, 0);
@@ -41,8 +38,6 @@ bool CLanguageData::Lookup(QString &source, QByteArray &output)
 			output = (const char*)dbvalue.get_data();
 			return true;
 		}
-		
-		qDebug() << "Key not found: " << source;
 	}
 	catch (DbException dbe)
 	{
@@ -60,19 +55,12 @@ bool CLanguageData::Store(QString &Key, QByteArray &Value)
 		Dbt dbkey(Key.data(), Key.size()*2+1);
 		Dbt dbvalue(Value.data(), Value.size()+1);
 		
-		qDebug() << "storing: " << Key << " " << Value;
-		
-		// TODO: check flag DB_APPEND (append translation value)
-		// or read existing first?
-		//
-		// should have unique keys
+		// should have unique keys, don't overwrite existing
 		int iRet = m_db.put(0, &dbkey, &dbvalue, DB_NOOVERWRITE);
 		if (iRet == 0) 
 		{
 			return true;
 		}
-		
-		qDebug() << "failed to store: " << Key << " " << Value << " result: " << iRet;
 	}
 	catch (DbException dbe)
 	{
@@ -87,7 +75,7 @@ bool CLanguageData::Store(QString &Key, QByteArray &Value)
 // - or: kanji /translation/..
 bool CLanguageData::appendDictionary(uchar *pData, qint64 iSize, QTextCodec *codec)
 {
-	// split kanji [kana] and translations
+	// split: kanji [kana] /translations
 	qint64 iPos = 0;
 	while (iPos < iSize)
 	{
@@ -122,12 +110,14 @@ bool CLanguageData::appendDictionary(uchar *pData, qint64 iSize, QTextCodec *cod
 	
 	// keep same translation for both kanji and kana separately
 	// for easier lookup later
-	
+
+	// keep kanji as-is with translation
 	if (Store(kanji.left(iPos), translation) == false)
 	{
 		return false;
 	}
-	
+
+	// keep kana without [] brackets with translation
 	int iEnd = kanji.indexOf(']');
 	if (Store(kanji.mid(iPos+1, (iEnd-iPos)-1), translation) == false)
 	{
@@ -211,8 +201,7 @@ bool CLanguageData::close()
 //
 bool CLanguageData::includeDictionary(QString &dictFile)
 {
-	// simplifies cleanup later..
-	//qAutoPtr dict(new QFile(dictFile));
+	// simplifies cleanup..
 	std::auto_ptr<QFile> dict(new QFile(dictFile));
 	
 	if (dict->open(QIODevice::ReadOnly) == false)
@@ -220,7 +209,7 @@ bool CLanguageData::includeDictionary(QString &dictFile)
 		return false;
 	}
 
-	// use memorymapping, let os do buffering..
+	// use memorymapping, let OS do buffering..
 	qint64 iSize = dict->size();
 	uchar *pView = dict->map(0, iSize);
 	if (pView == NULL)
@@ -251,40 +240,16 @@ bool CLanguageData::includeDictionary(QString &dictFile)
 		if ((iEnd-iStart) > 1)
 		{
 			// parse line to dictionary entries
-			appendDictionary(pPos, iEnd-iStart, codec);
+			if (appendDictionary(pPos, iEnd-iStart, codec) == false)
+			{
+				// continue with next
+			}
 		}
 			
 		iStart = iEnd;
 	}
-
 	return true;
 }
-
-
-// each "reading" in kanji+kana
-// may have multiple "meanings"
-// (terms not exactly correct but helps..)
-/*
-QStringList CLanguageData::getMeaning(QString &reading)
-{
-	// 
-}
-*/
-
-// add new meaning to given reading in kanji+kana
-// (terms not exactly correct but helps..)
-/*
-bool CLanguageData::addMeaning(QString &reading, QString &meaning)
-{
-}
-*/
-
-// keep whole sentence (for testing, now)
-/*
-bool CLanguageData::keepSentence(QString &reading)
-{
-}
-*/
 
 // get rough translation by dictionary lookup,
 // don't even attempt grammar/syntax handling..
@@ -337,6 +302,7 @@ QString CLanguageData::getText(QString &source)
 
 // "romanized" (latin-alphabet) representation
 // of kana-writing, mostly for debugging only..
+//
 QString CLanguageData::toRomaji(QString &source)
 {
 	QString output;

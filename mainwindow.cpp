@@ -7,7 +7,6 @@
 
 #include "LanguageData.h"
 
-#include <QClipboard>
 #include <QFileDialog>
 
 
@@ -29,7 +28,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	if (m_pClipBoard != NULL)
 	{
 		connect(m_pClipBoard, SIGNAL(changed(QClipboard::Mode)), this, SLOT(clipboardChanged(QClipboard::Mode)));
-		//ui->textBrowser->setText(m_pClipBoard->text());
+		ui->textBrowser->setText(m_pClipBoard->text());
 	}
 }
 
@@ -63,7 +62,7 @@ void MainWindow::clipboardChanged(QClipboard::Mode mode)
 		ui->textBrowser->setText(m_pLanguageData->getText(text));
 		
 		// TODO: show hiragana->romaji ?
-		ui->textBrowser->setText(m_pLanguageData->toRomaji(text));
+		//ui->textBrowser->setText(m_pLanguageData->toRomaji(text));
 	}
 }
 
@@ -72,8 +71,14 @@ void MainWindow::on_actionDictionary_triggered()
 	QString szFile = QFileDialog::getOpenFileName(this, tr("Open file"));
 	if (szFile != NULL)
 	{
-		m_pLanguageData->includeDictionary(szFile);
-		ui->statusBar->showMessage("Dictionary included");
+		if (m_pLanguageData->includeDictionary(szFile) == false)
+		{
+			ui->statusBar->showMessage("Error including dictionary");
+		}
+		else
+		{
+			ui->statusBar->showMessage("Dictionary included");
+		}
 	}
 }
 

@@ -7,7 +7,6 @@
 #include <QMainWindow>
 #include <QClipboard>
 
-//class QClipboard;
 class CLanguageData;
 
 namespace Ui {
