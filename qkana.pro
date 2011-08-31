@@ -23,11 +23,13 @@ INCLUDEPATH += C:/code/db-5.2.28/build_windows/
 
 CONFIG (debug, debug|release) 
 {
-    LIBS += -llibdb52d
     LIBS += -LC:/code/db-5.2.28/build_windows/Win32/Debug/
+    LIBS += -llibdb52d
 } 
+
 CONFIG (release, debug|release) 
 {
-    LIBS += -llibdb52
     LIBS += -LC:/code/db-5.2.28/build_windows/Win32/Release/
+    LIBS += -llibdb52
 }
+
