@@ -20,9 +20,9 @@ protected:
 	bool m_bIsOpen;
 
 	bool Lookup(QString &source, QByteArray &output);
-	bool Store(QString &Key, QByteArray &Value);
+	bool Store(QString &Key, void *pValue, int64_t iValueSize);
 	
-	bool appendDictionary(uchar *pData, qint64 iSize, QTextCodec *codec);
+	bool appendDictionary(uchar *pData, int64_t iSize, QTextCodec *codec);
 	
 public:
     CLanguageData();

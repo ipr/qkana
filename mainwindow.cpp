@@ -28,7 +28,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	if (m_pClipBoard != NULL)
 	{
 		connect(m_pClipBoard, SIGNAL(changed(QClipboard::Mode)), this, SLOT(clipboardChanged(QClipboard::Mode)));
-		ui->textBrowser->setText(m_pClipBoard->text());
+		//ui->textBrowser->setText(m_pClipBoard->text());
 	}
 }
 

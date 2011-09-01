@@ -9,13 +9,16 @@ QT       += core gui
 TARGET = qkana
 TEMPLATE = app
 
+DEFINES += UNICODE _UNICODE
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    LanguageData.cpp
+    LanguageData.cpp \
+    MemoryMappedFile.cpp
 
 HEADERS  += mainwindow.h \
-    LanguageData.h
+    LanguageData.h \
+    MemoryMappedFile.h
 
 FORMS    += mainwindow.ui
 
@@ -32,4 +35,3 @@ CONFIG (release, debug|release)
     LIBS += -LC:/code/db-5.2.28/build_windows/Win32/Release/
     LIBS += -llibdb52
 }
-

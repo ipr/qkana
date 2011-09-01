@@ -6,7 +6,7 @@
 // replaced by std::auto_ptr (VC++ 2010 has it..)
 //#include "qautoptr.h"
 
-#include <QFile>
+//#include <QFile>
 #include <QByteArray>
 #include <QTextCodec>
 #include <QDebug>
@@ -17,6 +17,9 @@
 // TODO: handle standard library exceptions also..
 #include <exception>
 
+// simpler to debug..
+#include "MemoryMappedFile.h"
+
 
 //////////// protected methods
 
@@ -26,7 +29,7 @@ bool CLanguageData::Lookup(QString &source, QByteArray &output)
 	{
 		// note: expect byte-size count, not character-count
 		// -> expect 16-bit size of characters
-		Dbt dbkey(source.data(), source.size()*2+1);
+		Dbt dbkey(source.data(), source.size()*sizeof(wchar_t)+2);
 		Dbt dbvalue; // <- check handling
 
 		// flags as zero, no change in data,
@@ -35,7 +38,10 @@ bool CLanguageData::Lookup(QString &source, QByteArray &output)
 		if (iRet == 0) 
 		{
 			// check, better way to set raw data to QString?
-			output = (const char*)dbvalue.get_data();
+			//output = (const char*)dbvalue.get_data();
+			
+			// just set raw data as-is
+			output.setRawData((char*)dbvalue.get_data(), dbvalue.get_size());
 			return true;
 		}
 	}
@@ -46,14 +52,14 @@ bool CLanguageData::Lookup(QString &source, QByteArray &output)
 	return false;
 }
 
-bool CLanguageData::Store(QString &Key, QByteArray &Value)
+bool CLanguageData::Store(QString &Key, void *pValue, int64_t iValueSize)
 {
 	try
 	{
 		// note: expect byte-size count, not character-count
 		// -> expect 16-bit size of characters
-		Dbt dbkey(Key.data(), Key.size()*2+1);
-		Dbt dbvalue(Value.data(), Value.size()+1);
+		Dbt dbkey(Key.data(), Key.size()*sizeof(wchar_t)+2);
+		Dbt dbvalue(pValue, iValueSize);
 		
 		// should have unique keys, don't overwrite existing
 		int iRet = m_db.put(0, &dbkey, &dbvalue, DB_NOOVERWRITE);
@@ -73,14 +79,13 @@ bool CLanguageData::Store(QString &Key, QByteArray &Value)
 // split line and store to db:
 // - line can be: kanji [kana] /translation1/translation2/..
 // - or: kanji /translation/..
-bool CLanguageData::appendDictionary(uchar *pData, qint64 iSize, QTextCodec *codec)
+bool CLanguageData::appendDictionary(uchar *pData, int64_t iSize, QTextCodec *codec)
 {
 	// split: kanji [kana] /translations
-	qint64 iPos = 0;
+	int64_t iPos = 0;
 	while (iPos < iSize)
 	{
-		uchar *puc = (pData+iPos);
-		if (*puc == '/')
+		if (pData[iPos] == '/')
 		{
 			break;
 		}
@@ -97,7 +102,8 @@ bool CLanguageData::appendDictionary(uchar *pData, qint64 iSize, QTextCodec *cod
 	QString kanji = codec->toUnicode((char*)pData, iPos);
 
 	// rest of line is translation(s)
-	QByteArray translation((char*)(pData+iPos), iSize-iPos);
+	int64_t iValueSize = (iSize-iPos);
+	uchar *pValuePos = (uchar*)(pData+iPos);
 
 	// if kanji+kana -> keep both,
 	// otherwise has just kanji
@@ -105,21 +111,21 @@ bool CLanguageData::appendDictionary(uchar *pData, qint64 iSize, QTextCodec *cod
 	if (iPos < 0)
 	{
 		// just kanji: keep it and translation
-		return Store(kanji, translation);
+		return Store(kanji, pValuePos, iValueSize+1);
 	}
 	
 	// keep same translation for both kanji and kana separately
 	// for easier lookup later
 
 	// keep kanji as-is with translation
-	if (Store(kanji.left(iPos), translation) == false)
+	if (Store(kanji.left(iPos), pValuePos, iValueSize+1) == false)
 	{
 		return false;
 	}
 
 	// keep kana without [] brackets with translation
 	int iEnd = kanji.indexOf(']');
-	if (Store(kanji.mid(iPos+1, (iEnd-iPos)-1), translation) == false)
+	if (Store(kanji.mid(iPos+1, (iEnd-iPos)-1), pValuePos, iValueSize+1) == false)
 	{
 		return false;
 	}
@@ -150,7 +156,7 @@ bool CLanguageData::init(QString &appPath)
 
 	try
 	{
-		QString dbPath = appPath.append("qkanadictionary.db");
+		QString dbPath = appPath.append("/qkanadictionary.db");
 		int iRet = m_db.open(NULL, dbPath.toLocal8Bit(), 
 		                     NULL, DB_BTREE, DB_CREATE, 0664);
 		if (iRet == 0)
@@ -202,34 +208,45 @@ bool CLanguageData::close()
 bool CLanguageData::includeDictionary(QString &dictFile)
 {
 	// simplifies cleanup..
-	std::auto_ptr<QFile> dict(new QFile(dictFile));
+	//std::auto_ptr<QFile> dict(new QFile(dictFile));
+	std::auto_ptr<CMemoryMappedFile> dict(new CMemoryMappedFile());
 	
-	if (dict->open(QIODevice::ReadOnly) == false)
+	//if (dict->open(QIODevice::ReadOnly) == false)
+	if (dict->Create(dictFile.utf16()) == false)
 	{
 		return false;
 	}
 
 	// use memorymapping, let OS do buffering..
-	qint64 iSize = dict->size();
-	uchar *pView = dict->map(0, iSize);
+	//qint64 iSize = dict->size();
+	//uchar *pView = dict->map(0, iSize);
+	int64_t iSize = dict->GetSize();
+	uchar *pView = (uchar*)dict->GetView();
 	if (pView == NULL)
 	{
 		return false;
 	}
-
+	
 	// just assume it has EDICT-format with EUC-JP encoding..
 	// -> convert to Unicode
 	QTextCodec *codec = QTextCodec::codecForName("EUC-JP");
 	
-	qint64 iStart = 0;
+	int64_t iStart = 0;
 	while (iStart < iSize)
 	{
 		uchar *pPos = (pView+iStart);
-		qint64 iEnd = iStart+1;
+		int64_t iEnd = iStart+1;
 		while (iEnd < iSize)
 		{
-			uchar *puc = (pPos+iEnd);
-			if (*puc == '\n')
+			// line separator in this format for some reason..
+			//
+			// for some weird reason,
+			// this gives access violation at roughly halfway in the file..
+			//
+			// wtf?
+			//
+			if (pPos[iEnd-1] == (uchar)0x20
+			   && pPos[iEnd] == (uchar)0x5B)
 			{
 				break;
 			}
@@ -245,7 +262,7 @@ bool CLanguageData::includeDictionary(QString &dictFile)
 				// continue with next
 			}
 		}
-			
+		
 		iStart = iEnd;
 	}
 	return true;
