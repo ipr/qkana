@@ -59,10 +59,10 @@ private:
 
 public:
 	CMemoryMappedFile(void);
-	CMemoryMappedFile(LPCTSTR szPathName);
+	CMemoryMappedFile(LPCTSTR szPathName, bool bAllowReadShare = true);
 	virtual ~CMemoryMappedFile(void);
 
-	bool Create(LPCTSTR szPathName);
+	bool Create(LPCTSTR szPathName, bool bAllowReadShare = true);
 	void Destroy();
 
 	bool IsCreated()

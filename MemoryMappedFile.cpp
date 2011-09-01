@@ -18,14 +18,14 @@ CMemoryMappedFile::CMemoryMappedFile(void)
 {
 }
 
-CMemoryMappedFile::CMemoryMappedFile(LPCTSTR szPathName)
+CMemoryMappedFile::CMemoryMappedFile(LPCTSTR szPathName, bool bAllowReadShare)
 	: m_hFile(INVALID_HANDLE_VALUE)
 	, m_hMapping(NULL)
 	, m_dwLastError(0)
 	, m_i64FileSize(0)
 	, m_pFileView(NULL)
 {
-	Create(szPathName);
+	Create(szPathName, bAllowReadShare);
 }
 
 CMemoryMappedFile::~CMemoryMappedFile(void)
@@ -36,7 +36,7 @@ CMemoryMappedFile::~CMemoryMappedFile(void)
 // Open given file as memory-mapped
 // for read-only access.
 //
-bool CMemoryMappedFile::Create(LPCTSTR szPathName)
+bool CMemoryMappedFile::Create(LPCTSTR szPathName, bool bAllowReadShare)
 {
 	// previous mapping open?
 	if (m_hFile != INVALID_HANDLE_VALUE
@@ -46,9 +46,15 @@ bool CMemoryMappedFile::Create(LPCTSTR szPathName)
 		Destroy();
 	}
 
-    m_hFile = ::CreateFile(szPathName,
+	DWORD dwSharedMode = FILE_SHARE_READ;	// share for reading by default
+	if (bAllowReadShare == false)
+	{
+		dwSharedMode = 0; // disallow all other access while file is open
+	}
+
+	m_hFile = ::CreateFile(szPathName,
 							GENERIC_READ,			// reading, no write/execute
-							FILE_SHARE_READ,		// share for reading 
+							dwSharedMode,			// sharing mode 
 							NULL,					// security attributes (use default)
 							OPEN_EXISTING,			// open existing file only 
 							FILE_ATTRIBUTE_NORMAL,	// normal file attribs

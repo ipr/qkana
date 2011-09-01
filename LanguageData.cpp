@@ -209,10 +209,12 @@ bool CLanguageData::includeDictionary(QString &dictFile)
 {
 	// simplifies cleanup..
 	//std::auto_ptr<QFile> dict(new QFile(dictFile));
+    //if (dict->open(QIODevice::ReadOnly) == false)
+    
 	std::auto_ptr<CMemoryMappedFile> dict(new CMemoryMappedFile());
-	
-	//if (dict->open(QIODevice::ReadOnly) == false)
-	if (dict->Create(dictFile.utf16()) == false)
+
+    // disallow sharing (exclusive access)
+	if (dict->Create(dictFile.utf16(), false) == false)
 	{
 		return false;
 	}
@@ -221,7 +223,7 @@ bool CLanguageData::includeDictionary(QString &dictFile)
 	//qint64 iSize = dict->size();
 	//uchar *pView = dict->map(0, iSize);
 	int64_t iSize = dict->GetSize();
-	uchar *pView = (uchar*)dict->GetView();
+	uint8_t *pView = (uint8_t*)dict->GetView();
 	if (pView == NULL)
 	{
 		return false;
@@ -234,20 +236,30 @@ bool CLanguageData::includeDictionary(QString &dictFile)
 	int64_t iStart = 0;
 	while (iStart < iSize)
 	{
-		uchar *pPos = (pView+iStart);
+		uint8_t *pPos = (pView+iStart);
 		int64_t iEnd = iStart+1;
 		while (iEnd < iSize)
 		{
-			// line separator in this format for some reason..
-			//
 			// for some weird reason,
 			// this gives access violation at roughly halfway in the file..
 			//
 			// wtf?
+            //
+            // it seems Windows (CE and 7?) has weird "security feature" in file-mapping
+            // which appears on only some files (different text-encoding it seems),
+            // on CE they have (undisclosed) flag to disable that shit
+            // but not on Win32?
+            // -> QFile also affected since it uses same API..
+            //
+            // note: another file which is 128MB (instead of 12MB) works fine
+            // in accessing this way, weird that only the one txt file is affected this way..
+            //
+            // -> try mapping in segments instead? try "largepage" sizes?
 			//
-			if (pPos[iEnd-1] == (uchar)0x20
-			   && pPos[iEnd] == (uchar)0x5B)
+			if (pPos[iEnd-1] == (uint8_t)0x20
+			   && pPos[iEnd] == (uint8_t)0x5B)
 			{
+                // line separator in this format?
 				break;
 			}
 			++iEnd;
@@ -257,7 +269,7 @@ bool CLanguageData::includeDictionary(QString &dictFile)
 		if ((iEnd-iStart) > 1)
 		{
 			// parse line to dictionary entries
-			if (appendDictionary(pPos, iEnd-iStart, codec) == false)
+			if (appendDictionary((uchar*)pPos, iEnd-iStart, codec) == false)
 			{
 				// continue with next
 			}
