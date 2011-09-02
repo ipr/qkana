@@ -232,34 +232,19 @@ bool CLanguageData::includeDictionary(QString &dictFile)
 	// just assume it has EDICT-format with EUC-JP encoding..
 	// -> convert to Unicode
 	QTextCodec *codec = QTextCodec::codecForName("EUC-JP");
-	
+
+    // note: offsets are in absolute values from start.
+    //
 	int64_t iStart = 0;
 	while (iStart < iSize)
 	{
-		uint8_t *pPos = (pView+iStart);
 		int64_t iEnd = iStart+1;
 		while (iEnd < iSize)
 		{
-			// for some weird reason,
-			// this gives access violation at roughly halfway in the file..
-			//
-			// wtf?
-            //
-            // it seems Windows (CE and 7?) has weird "security feature" in file-mapping
-            // which appears on only some files (different text-encoding it seems),
-            // on CE they have (undisclosed) flag to disable that shit
-            // but not on Win32?
-            // -> QFile also affected since it uses same API..
-            //
-            // note: another file which is 128MB (instead of 12MB) works fine
-            // in accessing this way, weird that only the one txt file is affected this way..
-            //
-            // -> try mapping in segments instead? try "largepage" sizes?
-			//
-			if (pPos[iEnd-1] == (uint8_t)0x20
-			   && pPos[iEnd] == (uint8_t)0x5B)
+            // line separator in this format?
+			if (pView[iEnd-1] == (uint8_t)0x20
+			   && pView[iEnd] == (uint8_t)0x5B)
 			{
-                // line separator in this format?
 				break;
 			}
 			++iEnd;
@@ -269,7 +254,7 @@ bool CLanguageData::includeDictionary(QString &dictFile)
 		if ((iEnd-iStart) > 1)
 		{
 			// parse line to dictionary entries
-			if (appendDictionary((uchar*)pPos, iEnd-iStart, codec) == false)
+			if (appendDictionary((uchar*)(pView+iStart), iEnd-iStart, codec) == false)
 			{
 				// continue with next
 			}
