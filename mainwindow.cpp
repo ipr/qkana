@@ -28,7 +28,7 @@ MainWindow::MainWindow(QWidget *parent) :
 	if (m_pClipBoard != NULL)
 	{
 		connect(m_pClipBoard, SIGNAL(changed(QClipboard::Mode)), this, SLOT(clipboardChanged(QClipboard::Mode)));
-		//ui->textBrowser->setText(m_pClipBoard->text());
+		ui->plainTextEdit->setPlainText(m_pClipBoard->text());
 	}
 }
 
@@ -48,21 +48,21 @@ void MainWindow::clipboardChanged(QClipboard::Mode mode)
 	}
 	*/
 	
-	ui->textBrowser->clear();
+	//ui->plainTextEdit->clear();
 	
 	QString text = m_pClipBoard->text();
 	
 	// show original capture
-	ui->textBrowser->setText(text);
+	ui->plainTextEdit->setPlainText(text);
 
 	// allow disabling automated translation..
 	if (m_bDisableTranslate == false)
 	{
 		// use dictionary..
-		ui->textBrowser->setText(m_pLanguageData->getText(text));
+        ui->plainTextEdit->appendPlainText(m_pLanguageData->getText(text));
 		
 		// TODO: show hiragana->romaji ?
-		//ui->textBrowser->setText(m_pLanguageData->toRomaji(text));
+		//ui->plainTextEdit->appendPlainText(m_pLanguageData->toRomaji(text));
 	}
 }
 

@@ -29,6 +29,8 @@ bool CLanguageData::Lookup(QString &source, QByteArray &output)
 	{
 		// note: expect byte-size count, not character-count
 		// -> expect 16-bit size of characters
+        // TODO: check this
+        //Dbt dbkey(source.utf16(), source.size()*sizeof(wchar_t)+2);
 		Dbt dbkey(source.data(), source.size()*sizeof(wchar_t)+2);
 		Dbt dbvalue; // <- check handling
 
@@ -58,7 +60,9 @@ bool CLanguageData::Store(QString &Key, void *pValue, int64_t iValueSize)
 	{
 		// note: expect byte-size count, not character-count
 		// -> expect 16-bit size of characters
-		Dbt dbkey(Key.data(), Key.size()*sizeof(wchar_t)+2);
+        // TODO: check this
+        //Dbt dbkey(Key.utf16(), Key.size()*sizeof(wchar_t)+2);
+        Dbt dbkey(Key.data(), Key.size()*sizeof(wchar_t)+2);
 		Dbt dbvalue(pValue, iValueSize);
 		
 		// should have unique keys, don't overwrite existing
@@ -280,26 +284,28 @@ QString CLanguageData::getText(QString &source)
 	while (iStart < source.length())
 	{
 		// this will need optimization later..
+        // too many string-copies..
 		//
 		// TODO: skip punctuation or allow whole phrases?
 		//
 		// TODO: better way to store translations..
 		//
 		QByteArray tmp;
-		int iTmpLen = source.length();
+		int iTmpLen = (source.length()-iStart);
 		while (iTmpLen > 0)
 		{
-			if (Lookup(source.left(iTmpLen), tmp) == true)
+			if (Lookup(source.mid(iStart, iTmpLen), tmp) == true)
 			{
 				break;
 			}
+            --iTmpLen;
 		}
 		
 		// no translation
 		if (iTmpLen == 0)
 		{
 			// output character as-is..
-			output += source.left(1);
+			output += source.mid(iStart, 1);
 			iStart += 1;
 		}
 		else

@@ -17,6 +17,8 @@ Translation is just rudimentary dictionary/phrase lookup and won't even attempt 
 Some quick hacking to use dictionary files for help, namely EDICT (http://www.csse.monash.edu.au/~jwb/edict.html),
 possibly others later also (needs improvements in db-layout first).
 
+One major limitation is that current way does not handle "mix&match" of kanji+kana characters correctly
+and those combinations need to be added to dictionary each for it to work.. Planning some better way..
 
 Licensing (open):
 BSD-style ? GPL v3 ? (to be determined..)
