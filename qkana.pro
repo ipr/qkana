@@ -14,13 +14,16 @@ DEFINES += UNICODE _UNICODE
 SOURCES += main.cpp\
         mainwindow.cpp \
     LanguageData.cpp \
-    MemoryMappedFile.cpp
+    MemoryMappedFile.cpp \
+    dictionary.cpp
 
 HEADERS  += mainwindow.h \
     LanguageData.h \
-    MemoryMappedFile.h
+    MemoryMappedFile.h \
+    dictionary.h
 
-FORMS    += mainwindow.ui
+FORMS    += mainwindow.ui \
+    dictionary.ui
 
 INCLUDEPATH += C:/code/db-5.2.28/build_windows/
 
@@ -35,3 +38,10 @@ CONFIG (release, debug|release)
     LIBS += -LC:/code/db-5.2.28/build_windows/Win32/Release/
     LIBS += -llibdb52
 }
+
+
+
+
+
+
+

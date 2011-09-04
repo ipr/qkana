@@ -29,6 +29,8 @@ private slots:
 	
 	void on_actionDisable_translation_triggered(bool checked);
 	
+    void on_actionView_translation_database_triggered();
+    
 private:
     Ui::MainWindow *ui;
 	QClipboard *m_pClipBoard;

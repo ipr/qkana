@@ -44,6 +44,7 @@
    <addaction name="actionQuit"/>
    <addaction name="actionDictionary"/>
    <addaction name="actionDisable_translation"/>
+   <addaction name="actionView_translation_database"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionQuit">
@@ -71,6 +72,14 @@
    </property>
    <property name="toolTip">
     <string>Disable automatic translation </string>
+   </property>
+  </action>
+  <action name="actionView_translation_database">
+   <property name="text">
+    <string>View translation database</string>
+   </property>
+   <property name="toolTip">
+    <string>View/edit current translation database </string>
    </property>
   </action>
  </widget>

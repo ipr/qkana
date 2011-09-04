@@ -6,8 +6,10 @@
 #include "ui_mainwindow.h"
 
 #include "LanguageData.h"
+#include "dictionary.h"
 
 #include <QFileDialog>
+
 
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -85,4 +87,12 @@ void MainWindow::on_actionDictionary_triggered()
 void MainWindow::on_actionDisable_translation_triggered(bool checked)
 {
 	m_bDisableTranslate = checked;
+}
+
+void MainWindow::on_actionView_translation_database_triggered()
+{
+    dictionary *pDict = new dictionary(this);
+    //dictionary->SetDictionary();
+
+    pDict->show();
 }
