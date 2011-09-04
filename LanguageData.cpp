@@ -1,4 +1,11 @@
 /////////////////////////////////////////////
+//
+// CLanguageData : container of dictionary-data
+// and translation handling.
+//
+// Support for EDICT-dictionary to import into dictionary-database
+// for fast lookup and editing.
+//
 // Ilkka Prusi, 2011
 
 #include "LanguageData.h"
@@ -115,21 +122,21 @@ bool CLanguageData::appendDictionary(uchar *pData, int64_t iSize, QTextCodec *co
 	if (iPos < 0)
 	{
 		// just kanji: keep it and translation
-		return Store(kanji, pValuePos, iValueSize+1);
+		return Store(kanji.trimmed(), pValuePos, iValueSize+1);
 	}
 	
 	// keep same translation for both kanji and kana separately
 	// for easier lookup later
 
 	// keep kanji as-is with translation
-	if (Store(kanji.left(iPos), pValuePos, iValueSize+1) == false)
+	if (Store(kanji.left(iPos).trimmed(), pValuePos, iValueSize+1) == false)
 	{
 		return false;
 	}
 
 	// keep kana without [] brackets with translation
 	int iEnd = kanji.indexOf(']');
-	if (Store(kanji.mid(iPos+1, (iEnd-iPos)-1), pValuePos, iValueSize+1) == false)
+	if (Store(kanji.mid(iPos+1, (iEnd-iPos)-1).trimmed(), pValuePos, iValueSize+1) == false)
 	{
 		return false;
 	}
@@ -286,15 +293,17 @@ QString CLanguageData::getText(QString &source)
 		// this will need optimization later..
         // too many string-copies..
 		//
-		// TODO: skip punctuation or allow whole phrases?
-		//
 		// TODO: better way to store translations..
 		//
+        
+        int iTmpLen = (source.length()-iStart);
+        // TODO: locate whitespace/punctuation
+        // and limit lookup or allow whole phrases in translation-database?
+        
 		QByteArray tmp;
-		int iTmpLen = (source.length()-iStart);
 		while (iTmpLen > 0)
 		{
-			if (Lookup(source.mid(iStart, iTmpLen), tmp) == true)
+			if (Lookup(source.mid(iStart, iTmpLen).trimmed(), tmp) == true)
 			{
 				break;
 			}
